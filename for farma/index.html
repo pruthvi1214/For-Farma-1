@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agricultural Decision Support</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: darkgreen;
+    }
+    section {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #2c662d;
+    }
+    input, select, button {
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 95%;
+    }
+    button {
+      background: green;
+      color: white;
+      cursor: pointer;
+      width: auto;
+    }
+    button:hover {
+      background: darkgreen;
+    }
+    pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌱 Agri Assist – Farmer Dashboard</h1>
+
+  <!-- Weather Info -->
+  <section>
+    <h2>🌤 Weather Info</h2>
+    <input type="text" id="districtWeather" placeholder="Enter district" />
+    <button onclick="getWeather()">Get Weather</button>
+    <pre id="weatherOutput"></pre>
+  </section>
+
+  <!-- Soil Info -->
+  <section>
+    <h2>🌱 Soil Info</h2>
+    <input type="text" id="districtSoil" placeholder="Enter district" />
+    <button onclick="getSoil()">Get Soil Data</button>
+    <pre id="soilOutput"></pre>
+  </section>
+
+  <!-- Crop Recommendation -->
+  <section>
+    <h2>🌾 Crop Recommendation</h2>
+    <input type="text" id="districtCrop" placeholder="Enter district" />
+
+    <input type="number" id="ph" placeholder="Soil pH value" step="0.1" />
+    <input type="number" id="nitrogen" placeholder="Nitrogen (kg/ha)" />
+    <input type="number" id="phosphorus" placeholder="Phosphorus (kg/ha)" />
+    <input type="number" id="potassium" placeholder="Potassium (kg/ha)" />
+    <input type="number" id="organicCarbon" placeholder="Organic Carbon (%)" step="0.1" />
+    <input type="number" id="moisture" placeholder="Moisture (%)" step="0.1" />
+
+    <button onclick="getRecommendation()">Get Recommendation</button>
+    <pre id="cropOutput"></pre>
+  </section>
+
+  <!-- Market Prices -->
+  <section>
+    <h2>📈 Market Prices</h2>
+    <input type="text" id="districtMarket" placeholder="Enter district" />
+    <button onclick="getMarket()">Get Market Data</button>
+    <pre id="marketOutput"></pre>
+  </section>
+
+  <!-- Plant Disease Detection -->
+  <section>
+    <h2>📸 Plant Disease Detection</h2>
+    <input type="file" id="diseaseImage" accept="image/*" />
+    <button onclick="detectDisease()">Detect Disease</button>
+    <pre id="diseaseOutput"></pre>
+  </section>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api"; // FastAPI backend
+
+    // Weather
+    async function getWeather() {
+      const district = document.getElementById("districtWeather").value;
+      if (!district) return alert("Enter a district!");
+      try {
+        const res = await fetch(`${API_BASE}/weather?district=${district}`);
+        const data = await res.json();
+        document.getElementById("weatherOutput").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        alert("Error fetching weather: " + err);
+      }
+    }
+
+    // Soil
+    async function getSoil() {
+      const district = document.getElementById("districtSoil").value;
+      if (!district) return alert("Enter a district!");
+      try {
+        const res = await fetch(`${API_BASE}/soil?district=${district}`);
+        const data = await res.json();
+        document.getElementById("soilOutput").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        alert("Error fetching soil: " + err);
+      }
+    }
+
+    // Crop Recommendation
+    async function getRecommendation() {
+      const district = document.getElementById("districtCrop").value;
+      const ph = document.getElementById("ph").value;
+      const n = document.getElementById("nitrogen").value;
+      const p = document.getElementById("phosphorus").value;
+      const k = document.getElementById("potassium").value;
+      const oc = document.getElementById("organicCarbon").value;
+      const m = document.getElementById("moisture").value;
+
+      if (!district || !ph || !n || !p || !k) return alert("Fill all required fields!");
+
+      try {
+        const url = `${API_BASE}/recommend?district=${district}&ph=${ph}&n=${n}&p=${p}&k=${k}&oc=${oc}&m=${m}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        document.getElementById("cropOutput").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        alert("Error fetching recommendation: " + err);
+      }
+    }
+
+    // Market
+    async function getMarket() {
+      const district = document.getElementById("districtMarket").value;
+      if (!district) return alert("Enter a district!");
+      try {
+        const res = await fetch(`${API_BASE}/market?district=${district}`);
+        const data = await res.json();
+        document.getElementById("marketOutput").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        alert("Error fetching market data: " + err);
+      }
+    }
+
+    // Disease Detection
+    async function detectDisease() {
+      const fileInput = document.getElementById("diseaseImage");
+      if (!fileInput.files.length) return alert("Select an image!");
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result;
+        try {
+          const res = await fetch(`${API_BASE}/detect`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: base64 })
+          });
+          const data = await res.json();
+          document.getElementById("diseaseOutput").textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          alert("Error detecting disease: " + err);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
